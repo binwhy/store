@@ -1,0 +1,350 @@
+<template>
+    <div>
+        <div v-if="select_taskType != ''">
+            <Row >
+                <task_edit-table v-model="tableData" 
+                            :columnsList="tableColumns" 
+                            :isLoading="tableLoading"
+                            @on-change="select_all" 
+                            @on-delete="row_delete"
+                            :optionsList="selectList" 
+                            style="margin-top: 10px"
+                            >
+                </task_edit-table>
+                <page-table :count="totalsize" @on-change="changePage" @on-page-size-change="changePageSize"></page-table>
+            </Row>
+        </div>
+        <Row>
+            <Col span="8" offset="7">
+                <task_edit-form
+                        ref="formRef"
+                        v-model="modelFormData"
+                        :formItems="newModelForm"
+                        :formDataVaildate="formDataVaildate"
+                        @on-click-submit="formSubmit"
+                        @select-changed="selectChanged">
+                </task_edit-form>
+            </Col>
+        </Row> 
+        
+    </div>
+</template>
+<script>
+    import task_editForm from '../common/form/best-form.vue';
+    import task_editTable from '../common/table/table-list.vue';
+    import pageTable  from '../common/pagination/page-table.vue';
+    import task_editModel_th from './task_edit_th.js';
+    import util  from '../../libs/util.js';
+
+    var current_username = document.cookie.split(";")[0].split("=")[1];//定义全局变量获取当前登录用户名
+
+    export default {
+        components: {
+            task_editForm,
+            task_editTable,
+            pageTable
+
+        },
+        data () {
+            return {
+                newModelForm: [],
+                modelFormData: {},
+                formDataVaildate:{
+                    description:[
+                        { required: true, message: 'Please enter basic platform name!', trigger: 'change' }
+                    ],
+                    task_type: [
+                        { required: true, message: 'Please enter basic platform name!', trigger: 'blur' }
+                    ],
+                    // execute_time: [
+                    //     { required: true, message: 'Please enter brand name!', trigger: 'blur' }
+                    // ],
+                },
+                tableData: [
+                {   
+                    dev_type: 'AP',
+                    operation_mode: 'AP',
+                    model_name:'AC-1027L_O',
+                    mac_addr: '00:33:20:11:22:33',
+                    reboot_status:'AC-1027L',
+                    status: 'running',
+                    templet_name:'default'
+                },
+                {
+                    dev_type: 'AP',
+                    operation_mode: 'AP',
+                    model_name:'AC-1027L_O',
+                    mac_addr: '00:33:20:11:22:44',
+                    reboot_status:'AC-1027L',
+                    status: 'running',
+                    templet_name:'default'
+                },
+                {
+                    dev_type: 'AP',
+                    operation_mode: 'AP',
+                    model_name:'ZAC-1023',
+                    mac_addr: '00:33:20:11:22:55',
+                    reboot_status:'1023',
+                    status: 'running',
+                    templet_name:'default'
+                },
+                {
+                    dev_type: 'AP',
+                    operation_mode: 'AP',
+                    model_name:'XN-1033',
+                    mac_addr: '00:33:20:11:22:66',
+                    reboot_status:'1033',
+                    status: 'running',
+                    templet_name:'default'
+                },
+                {
+                    dev_type: 'AP',
+                    operation_mode: 'AP',
+                    model_name:'XN-1030',
+                    mac_addr: '00:33:20:11:22:77',
+                    reboot_status:'1030',
+                    status: 'running',
+                    templet_name:'default'
+                },
+                {   
+                    dev_type: 'AP',
+                    operation_mode: 'AP',
+                    model_name:'XN-1032',
+                    mac_addr: '00:33:20:11:22:88',
+                    reboot_status:'1032',
+                    status: 'running',
+                    templet_name:'default'
+                }
+                ],
+                tableColumns: [],
+                totalsize: 0,
+                page_size: 10,
+                select_taskType:'',
+
+                baseuri: '/task-managements',
+                selectList: {
+                    templet_name: [
+                        {
+                            value: 'default1',
+                            label: 'default1',
+                            selectable: true
+                        },
+                        {
+                            value: 'default2',
+                            label: 'default2'
+                        },
+                        {
+                            value: 'default3',
+                            label: 'default3'
+                        },
+                        {
+                            value: 'default4',
+                            label: 'default4'
+                        }
+                    ]
+                }
+            }
+        },
+        methods: {
+            selectChanged: function(event){
+                if(event === "now")
+                {
+                    task_editModel_th.task_editModel[3].type = "none";
+                }else if(event === "schedule-on"){
+                    task_editModel_th.task_editModel[3].type = "DatePicker";
+                }else{
+                        this.select_taskType = event;
+                        this.change_table_list(this.select_taskType);
+
+                        console.log(this.select_taskType);
+                        console.log("change the taskType!!!!\n");
+                }  
+            },
+            //根据任务选项加载不同的表单内容
+            change_table_list: function(task_type){
+                if(task_type === "reboot" || task_type === "diagnostic"){
+                    this.tableColumns = task_editModel_th.reboot_tableColumns;
+                }else if(task_type === "templet"){
+                    this.tableColumns = task_editModel_th.templet_tableColumns;
+                }else if(task_type === "firmware"){
+                    this.tableColumns = task_editModel_th.firmware_tableColumns;
+                }
+                // for(var i=1111;i<2222;i++)
+                // {
+                //     console.log(i);
+                //     util.ajax.request('post', this.baseuri, {}, {}, this.response_callback, this.exception_callback);
+                // }
+                // //根据不同任务类型去读取不同任务内容
+                // let params = {
+                //     username: current_username,
+                //     limit: this.page_size,
+                //     task_type:task_type
+                // };
+                // this.tableLoading = true;
+                // util.ajax.request('get', this.baseuri, params, {}, this.response_callback, this.exception_callback);
+            },
+            select_all: function()
+            {
+                console.log("hello world!!\n");
+            },
+            //将UTC时间 转换成 2018-03-16 00:00:00 格式
+            date_change(i_date) {
+                var date = new Date(i_date);
+                var Y = date.getFullYear();
+                var m = date.getMonth() + 1;
+                var d = date.getDate();
+                var H = date.getHours();
+                var i = date.getMinutes();
+                var s = date.getSeconds();
+                if (m < 10) {
+                    m = '0' + m;
+                }
+                if (d < 10) {
+                    d = '0' + d;
+                }
+                if (H < 10) {
+                    H = '0' + H;
+                }
+                if (i < 10) {
+                    i = '0' + i;
+                }
+                if (s < 10) {
+                    s = '0' + s;
+                }
+                var t = Y+'-'+m+'-'+d+' '+H+':'+i+':'+s;
+                return t;
+            },
+            //表单提交
+            formSubmit: function (vaild, formDataObject) {
+                if (vaild){
+                    let formData = new FormData();
+                    formDataObject.execute_time = this.date_change(formDataObject.execute_time);
+                    // this.$set(formDataObject, 'group_name', 'AC-1027L');
+                    // this.$set(formDataObject, 'reviewer', 'ladtest');
+                    // this.$set(formDataObject, 'username', 'LiuAD');
+                    // this.$set(formDataObject, 'device_mac', 'AC-1027L');
+                    // this.$set(formDataObject, 'status', 'success');
+                    Object.keys(formDataObject).forEach((key) => {
+                        formData.append(key, formDataObject[key]);
+                    });
+                    util.ajax.request('post',  this.baseuri, {}, formData, this.response_callback, this.exception_callback);
+                    console.log(formDataObject);
+                    this.$Message.success('Success !');
+                }else{
+                    this.$Message.error('Failed !');
+                }
+            },
+            //ajax请求返回值处理
+            response_callback(res) {
+                this.tableLoading = false;
+                this.tableData = res.data.body;
+                this.totalsize = res.data.count;
+                console.log("this is response_callback");
+            },
+            //ajax请求错误异常处理
+            exception_callback(err) {
+                console.log(err);
+            }
+        },
+        created: function (){
+            this.newModelForm = task_editModel_th.task_editModel;
+            //this.tableColumns = task_editModel_th.task_edit_tableColumns;
+        },
+        watch: {
+            value (task_type) {
+                this.tableColumns = task_editModel_th.firmware_tableColumns;
+            }
+        }
+    }
+</script>
+<!-- <template>
+    <Cascader :data="data" v-model="value1" trigger="hover"></Cascader>
+</template>
+<script>
+    export default {
+        data () {
+            return {
+                value1: [],
+                data: []
+            }
+        },
+        methods: {
+
+        },
+        created: function (){
+            var task_list = [
+                        {
+                            value: 'gugong',
+                            label: '重启任务'
+                        },
+                        {
+                            value: 'tiantan',
+                            label: '模板下发'
+                        },
+                        {
+                            value: 'wangfujing',
+                            label: '固件更新'
+                        },
+                        {
+                            value: 'wangfujing',
+                            label: '诊断任务'
+                        }
+                    ];
+
+            var group_list =['AC-1027L','ZAC-1023-5-13','XN-1033'];
+           
+            var model_name_list = new Array(group_list.length);
+                for (var i = 0; i < group_list.length; i++) {
+                    model_name_list[i] = {};
+                    model_name_list[i].label = group_list[i];
+                    model_name_list[i].value = group_list[i];
+                    model_name_list[i].children = task_list;
+                }
+                this.data=model_name_list;
+            // this.data = [{
+            //         value: 'AC-1027L',
+            //         label: 'AC-1027L',
+            //         children: [
+            //             {
+            //                 value: 'gugong',
+            //                 label: '重启任务'
+            //             },
+            //             {
+            //                 value: 'tiantan',
+            //                 label: '模板下发'
+            //             },
+            //             {
+            //                 value: 'wangfujing',
+            //                 label: '固件更新'
+            //             },
+            //             {
+            //                 value: 'wangfujing',
+            //                 label: '诊断任务'
+            //             }
+            //         ]
+            //     }, {
+            //         value: 'XN-1033',
+            //         label: 'XN-1033',
+            //         children: [
+            //             {
+            //                 value: 'gugong',
+            //                 label: '重启任务'
+            //             },
+            //             {
+            //                 value: 'tiantan',
+            //                 label: '模板下发'
+            //             },
+            //             {
+            //                 value: 'wangfujing',
+            //                 label: '固件更新'
+            //             },
+            //             {
+            //                 value: 'wangfujing',
+            //                 label: '诊断任务'
+            //             }
+            //         ],
+            //     }];
+                console.log(this.data.length);
+        }
+    }
+</script> -->
